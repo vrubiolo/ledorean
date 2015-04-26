@@ -1,6 +1,7 @@
 #include "FastLED.h"
 #include <avr/pgmspace.h>
 #include <SoftwareSerial.h>
+#include "glcdfont.c"
 
 void setup() { 
   ledstrip_setup();
@@ -11,13 +12,14 @@ void setup() {
 }
 
 void loop() {
-  int angry;
-  angry = pressure_loop();
-
-  if (angry == 1) {
-    drawFinger();
-  } else {
-    messages_loop();
-    //cloud_loop ();
-  }
+//  int angry;
+//  angry = pressure_loop();
+//
+//  if (angry == 1) {
+//    drawFinger();
+//  } else {
+//    messages_loop();
+//    //cloud_loop ();
+//  }
+  ledstrip_loop();
 }

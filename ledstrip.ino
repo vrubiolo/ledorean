@@ -431,7 +431,7 @@ const char font_8 [BITMAP_LEN] PROGMEM = {
 //  0,0,0,0,0,0,0
 //};
 
-const char * font [] = {
+const char * font_letters [] = {
   font_a, font_b, font_c, font_d, font_e, font_f, font_g, font_h,
   font_i, font_j, font_k, font_l, font_m, font_n, font_o, font_p,
   font_q, font_r, font_s, font_t, font_u, font_v, font_w, font_x,
@@ -493,7 +493,7 @@ void drawBitmap (const char * bitmap, CRGB color) {
   bitmapToLeds(color);
 }
 
-void drawChar (char c) {
+void drawCharBitmap (char c) {
   const char * bitmap;
   
   c = tolower(c);
@@ -514,7 +514,7 @@ void drawChar (char c) {
   else
     {  
     int charCode = (int) c - 97;
-    bitmap = font[charCode];
+    bitmap = font_letters[charCode];
     }
 
 //  Serial.print("Drawing '");
@@ -546,7 +546,7 @@ void drawWord (char str[]) {
   for (short idx = 0; idx < strlen(str); idx ++) {
     drawChar (str[idx]);
    }
-  clearScreen ();
+//  clearScreen ();
 }
 
 void fontTest () {
@@ -615,16 +615,50 @@ void muteLED (int ledIdx) {
   leds[ledIdx] = CRGB::Black;
 }
 
-//void lightColumn () {
-//  char indexes[NB_COLS] = {0, 7, 14, 21, 28, 35, 42};
-//  
-//  for (int idx = 0; idx < NB_COLS; idx ++) {
-//    lightLED(indexes[idx]);
-//  }
-//  FastLED.show();
-//}
+#define BIT_IS_SET(val, bitIndex) (val & (1 << bitIndex))
+
+void fontDump (char c) {
+  Serial.println("Font dump");
+  for (int idx = 0; idx < 5; idx++) {
+    Serial.print(pgm_read_byte_near(&font[5*c + idx]),HEX);
+    Serial.print(", ");
+  }
+  Serial.println("");
+}
+
+void lightColumn (byte colNb, byte value) {
+  char colIdx[NB_COLS] = {0, 7, 14, 21, 28, 35, 42};
+  
+  for (int bitIdx = 0; bitIdx < 7; bitIdx++) {
+    if (BIT_IS_SET (value, bitIdx)) {
+      lightLED(colIdx[bitIdx] + colNb, CRGB::Green);
+    } else {
+      muteLED(colIdx[bitIdx] + colNb);
+    }
+  }
+  FastLED.show();
+}
+
+void drawChar (char c) {
+  for (int colIdx = 0; colIdx < 5; colIdx++) {
+    lightColumn (colIdx, pgm_read_byte_near(&font[c*5 + colIdx]));
+  }
+  delay(500);
+}
 
 void ledstrip_setup () {
     Serial.begin(9600);
     FastLED.addLeds<TM1804, DATA_PIN, GRB>(leds, NUM_LEDS);
+}
+
+void ledstrip_loop () {
+  char incomingByte = 0;
+  
+  if(Serial.available() > 0) {
+    incomingByte = Serial.read();
+    Serial.print ("Read from Serial: ");
+    Serial.println (incomingByte);
+    
+    drawChar(incomingByte);
+  }
 }
