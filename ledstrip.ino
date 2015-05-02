@@ -617,7 +617,8 @@ void muteLED (int ledIdx) {
 
 #define BIT_IS_SET(val, bitIndex) (val & (1 << bitIndex))
 
-void fontDump (char c) {
+// Dumps the 5 columns of the font in hex
+void fontHexDump (char c) {
   Serial.println("Font dump");
   for (int idx = 0; idx < 5; idx++) {
     Serial.print(pgm_read_byte_near(&font[5*c + idx]),HEX);
@@ -627,14 +628,27 @@ void fontDump (char c) {
 }
 
 void lightColumn (byte colNb, byte value) {
-  char colIdx[NB_COLS] = {0, 7, 14, 21, 28, 35, 42};
+  char rowIdx[NB_COLS] = {0, 7, 14, 21, 28, 35, 42};
   
+//  Serial.print ("Lighting column ");
+//  Serial.println(colNb);
   for (int bitIdx = 0; bitIdx < 7; bitIdx++) {
     if (BIT_IS_SET (value, bitIdx)) {
-      lightLED(colIdx[bitIdx] + colNb, CRGB::Green);
+      lightLED(rowIdx[bitIdx] + colNb, CRGB::Green);
     } else {
-      muteLED(colIdx[bitIdx] + colNb);
+      muteLED(rowIdx[bitIdx] + colNb);
     }
+  }
+  FastLED.show();
+}
+
+void muteColumn (byte colNb) {
+  char rowIdx[NB_COLS] = {0, 7, 14, 21, 28, 35, 42};
+  
+//  Serial.print ("Muting column ");
+//  Serial.println(colNb);
+  for (int bitIdx = 0; bitIdx < 7; bitIdx++) {
+    muteLED(rowIdx[bitIdx] + colNb);
   }
   FastLED.show();
 }
@@ -644,6 +658,24 @@ void drawChar (char c) {
     lightColumn (colIdx, pgm_read_byte_near(&font[c*5 + colIdx]));
   }
   delay(500);
+}
+
+void scrollChar (char c) {
+  byte offset = 0;
+  
+  for (int scrollIdx = 0; scrollIdx < 7; scrollIdx++) {
+    if (scrollIdx <= 2) {
+      offset = 0;
+    } else {
+      offset = scrollIdx - 2;
+    }
+    
+    for (int colIdx = 0; colIdx < 5 - offset; colIdx++) {
+      lightColumn (colIdx + scrollIdx, pgm_read_byte_near(&font[c*5 + colIdx]));
+    }
+    delay(100);
+    muteColumn (scrollIdx);
+  }
 }
 
 void ledstrip_setup () {
@@ -659,6 +691,7 @@ void ledstrip_loop () {
     Serial.print ("Read from Serial: ");
     Serial.println (incomingByte);
     
-    drawChar(incomingByte);
+    drawChar (incomingByte);
+    scrollChar (incomingByte);
   }
 }
