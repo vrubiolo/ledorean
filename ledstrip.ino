@@ -660,9 +660,10 @@ void drawChar (char c) {
   delay(500);
 }
 
-void scrollChar (char c) {
+void scrollChar (char c, int msecs) {
   byte offset = 0;
   
+  // compute actual number of columns we need to draw
   for (int scrollIdx = 0; scrollIdx < 7; scrollIdx++) {
     if (scrollIdx <= 2) {
       offset = 0;
@@ -673,9 +674,24 @@ void scrollChar (char c) {
     for (int colIdx = 0; colIdx < 5 - offset; colIdx++) {
       lightColumn (colIdx + scrollIdx, pgm_read_byte_near(&font[c*5 + colIdx]));
     }
-    delay(100);
+    delay(msecs);
     muteColumn (scrollIdx);
   }
+}
+
+// Control scrolling speed using potentiometer
+int getDelay () {
+  int msecs;
+  
+  int potVal = analogRead(A0);
+//  Serial.print ("Read: ");
+//  Serial.println (potVal);
+  
+  msecs = map (potVal, 0, 1023, 0, 2000);
+//  Serial.print ("Msecs: ");
+//  Serial.println (msecs);
+  
+  return msecs;
 }
 
 void ledstrip_setup () {
@@ -685,6 +701,9 @@ void ledstrip_setup () {
 
 void ledstrip_loop () {
   char incomingByte = 0;
+  int msecs = 100;
+ 
+//  msecs = getDelay ();
   
   if(Serial.available() > 0) {
     incomingByte = Serial.read();
@@ -692,6 +711,6 @@ void ledstrip_loop () {
     Serial.println (incomingByte);
     
     drawChar (incomingByte);
-    scrollChar (incomingByte);
+    scrollChar (incomingByte, msecs);
   }
 }
